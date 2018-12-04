@@ -7,6 +7,7 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
 using OpenCvSharp;
 
@@ -14,147 +15,177 @@ namespace DrawingByMouse
 {
     public partial class Form1 : Form
     {
-        System.Drawing.Color color = new System.Drawing.Color();
-        int pen_size = new int();
-        float x1, x2, y1, y2;
+        bool start_Paint = new bool();
 
-        System.Drawing.Point mDown = System.Drawing.Point.Empty;
-        System.Drawing.Point mCurrent = System.Drawing.Point.Empty;
-        Bitmap bitmap;
-        Bitmap a,m,empty;
-        Pen pen = new Pen(Brushes.Red);
-        Graphics g;
-        C_lmage c_img = new C_lmage();
-        Boolean down = new Boolean();
+        System.Drawing.Point ini_Coord = System.Drawing.Point.Empty;
+        System.Drawing.Point Current_Coord = System.Drawing.Point.Empty;
         Mat img_;
+        Scalar color = Scalar.FromRgb(0,0,0);
+        Pen pen = new Pen(Brushes.Red,10);
+        
+
+        Bitmap aux;
+        Bitmap gg;
+        Bitmap img_aux;
+   
+        Graphics graphics;
+
+        Mat mat_aux;
+
         public Form1()
         {
             InitializeComponent();
+            textBox1.Text = Convert.ToString(10);
+            button4.BackColor = Color.Red;
+
+           panel1.AutoScroll = true;
+           panel1.Controls.Add(pictureBox1);
+
+            pen.EndCap = pen.StartCap = LineCap.Round;
+        }
+
+        private void pictureBox1_MouseWheel(object sender, MouseEventArgs e)
+        {
+
+           
+            
+            float factor = 0;
+            if (ModifierKeys.HasFlag(Keys.Alt))
+            {
+                if (e.Delta > 0)
+                {
+                    factor = 1.1f;
+                    pictureBox1.Width = (int)(pictureBox1.Width * factor);
+                    pictureBox1.Height = (int)(pictureBox1.Height * factor);
+                }
+                    
+                else
+                {
+                    factor = 0.9f;
+                    pictureBox1.Width = (int)(pictureBox1.Width * factor);
+                    pictureBox1.Height = (int)(pictureBox1.Height * factor);
+                    if (pictureBox1.Height <= panel1.Height || pictureBox1.Width <= panel1.Width)
+                    {
+                        pictureBox1.Width = panel1.Width;
+                        pictureBox1.Height = panel1.Height;
+                    }
+                    else
+                        return;
+                }
+                #region Move PictureBox1 inside of the Panel1
+                System.Drawing.Point panelcenter = new System.Drawing.Point((panel1.Width / 2), (panel1.Height / 2)); // find the centerpoint o
+                System.Drawing.Point offsetinpicturebox = new System.Drawing.Point((pictureBox1.Location.X + e.Location.X), (pictureBox1.Location.Y + e.Location.Y)); // find the offset of the mouse click
+                System.Drawing.Point offsetfromcenter = new System.Drawing.Point((panelcenter.X - offsetinpicturebox.X), (panelcenter.Y - offsetinpicturebox.Y)); // find the difference between the mouse click and the center
+                panel1.AutoScrollPosition = new System.Drawing.Point(
+                    (Math.Abs(panel1.AutoScrollPosition.X) + (-1 * offsetfromcenter.X)),
+                    (Math.Abs(panel1.AutoScrollPosition.Y) + (-1 * offsetfromcenter.Y))
+                );
+                #endregion Move PictureBox1 inside of the Panel1
+            }
+            int jajaa=(panel1.AutoScrollPosition.Y) ;
+      
+            
+            if (ModifierKeys.HasFlag(Keys.Control))
+            {
+                if (e.Delta > 0)
+                    panel1.AutoScrollPosition = new System.Drawing.Point(-panel1.AutoScrollPosition.X + 120, jajaa);
+                else
+                    panel1.AutoScrollPosition = new System.Drawing.Point(-panel1.AutoScrollPosition.X-120, jajaa);
+            }
+            else
+                return;
+
+
+
+
         }
 
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
-            //mDown = System.Drawing.Point.Empty;
-            down = false;
+            start_Paint = false;
+            ini_Coord = System.Drawing.Point.Empty;
         }
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
-            mDown = e.Location;
-           mDown = TranslateStretchImageMousePosition(mDown);
-            down = true;
+            ini_Coord = TranslateStretchImageMousePosition(e.Location);
+            start_Paint = true;
         }
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            long bytes1 = GC.GetTotalMemory(false);
-            if (e.Button == System.Windows.Forms.MouseButtons.Left && down)
+           
+
+            System.Drawing.SolidBrush myBrush = new System.Drawing.SolidBrush(System.Drawing.Color.Red);
+            if (e.Button == MouseButtons.Left && start_Paint)
             {
-                
-                pen.Width = pen_size;
-                pen.Color = color;
-                //set the linejoin (not needed, but gives better results)
-                pen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
 
-                using (g = Graphics.FromImage(bitmap))
+
+                pen.Width = Convert.ToInt16(textBox1.Text);
+
+
+                using (graphics = Graphics.FromImage(aux))
                 {
-                     
-                    Graphics dd = Graphics.FromImage(empty);
-                
-                    g.DrawImage(a, 0, 0);
-                    mCurrent = e.Location;
-                    mCurrent = TranslateStretchImageMousePosition(mCurrent);
-                    g.DrawLine(pen, mDown, mCurrent);//
-                    
-                    dd.DrawImage(m, 0, 0);
-                    dd.DrawLine(pen, mDown, mCurrent);
-                    
-                    g.SmoothingMode = SmoothingMode.HighQuality;
-                 
+                    graphics.DrawLine(pen, ini_Coord, TranslateStretchImageMousePosition(e.Location));
+                    graphics.CompositingQuality = CompositingQuality.HighQuality;
+                    graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    ini_Coord = TranslateStretchImageMousePosition(e.Location);
+
                 }
+                mat_aux = C_lmage.BitmapToMat(aux);  //////ERROR
 
 
 
-                m = empty;
-                pictureBox1.Invalidate();
-                a = bitmap;
-                pictureBox1.Image = bitmap;
 
 
-                mDown = e.Location;
-               mDown = TranslateStretchImageMousePosition(mDown);
+                aux.MakeTransparent();
+
+                Graphics g = Graphics.FromImage(img_aux);
+
+                g.DrawImage(aux, 0, 0);
+
+                pictureBox1.Image = img_aux;
+                pictureBox1.Refresh();
+
+
+
+
+
 
             }
-            if (e.Button == System.Windows.Forms.MouseButtons.Right && down)
-            {
-                mCurrent = e.Location;
-                mCurrent = TranslateStretchImageMousePosition(mCurrent);
-                pen.Width = 2;
-                //set the linejoin (not needed, but gives better results)
-                pen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
-
-                using (g = Graphics.FromImage(bitmap))
-                {
-
-
-                    g.Clear(Color.Red);
-                }
-
-
-
-
-                pictureBox1.Invalidate();
-                a = bitmap;
-                pictureBox1.Image = bitmap;
-
-
-                mDown = e.Location;
-
-            }
+            GC.Collect();
         }
-        private void pictureBox1_Paint(object sender, PaintEventArgs e)
-        {
-            //if (mDown != Point.Empty)
-            //    e.Graphics.DrawLine(Pens.White, mDown, mCurrent);
-            
-        }
+
         private void button1_Click(object sender, EventArgs e)
         {
             if (pictureBox1.Image != null)
-
             {
                 pictureBox1.Image = null;
-
                 Invalidate();
-
             }
+            img_ = null;
         }
+
 
         private void button2_Click(object sender, EventArgs e)
         {
-            Mat aa = C_lmage.BitmapToMat(bitmap);
-            Mat bb= C_lmage.BitmapToMat(empty);
-            aa = C_lmage.C_Image_Resize(aa, img_.Width, img_.Height);
-            Cv2.ImWrite("C:\\Users\\Malky_PC\\Pictures\\test\\test.jpg", aa);
-            Cv2.ImWrite("C:\\Users\\Malky_PC\\Pictures\\test\\test_.png", bb);
+            Mat aux_mat = C_lmage.BitmapToMat(aux);
+            Cv2.ImWrite("C:\\Users\\LAB01-PC\\Pictures\\test\\test.jpg", mat_aux);
+           
         }
 
         private void button4_Click(object sender, EventArgs e)
         {
-
            if(colorDialog1.ShowDialog() == DialogResult.OK)
             {
-                color = colorDialog1.Color;
-                Console.WriteLine("color -> " + color.ToString());
+                button4.BackColor = colorDialog1.Color;
+                pen.Color = Color.FromArgb(255, colorDialog1.Color);
+                color = Scalar.FromRgb(colorDialog1.Color.R, colorDialog1.Color.G, colorDialog1.Color.B);
             }
-            
-           
+                
         }
 
-        private void textBox1_TextChanged(object sender, EventArgs e)
-        {
-            pen_size = int.Parse(textBox1.Text);     
-        }
+
 
         private void button3_Click(object sender, EventArgs e)
         {
@@ -167,70 +198,54 @@ namespace DrawingByMouse
                 {
 
                     img_= C_lmage.C_Image_OpenImage(dlg.FileName,1);
-                    //Mat img = C_lmage.C_Image_Resize(img_, pictureBox1.Width, pictureBox1.Height);
-                    Bitmap gg = C_lmage.MatToBitmap(img_);
+                    gg = C_lmage.MatToBitmap(img_);
                     pictureBox1.Image = gg;
-                    a = new Bitmap(gg);//bitmap = new Bitmap(pictureBox1.Width, pictureBox1.Height);
-                    bitmap = new Bitmap(a.Width, a.Height);
-                    m = new Bitmap(img_.Width, img_.Height);
-                    empty = new Bitmap(img_.Width, img_.Height);
-                    //bitmap = new Bitmap(dlg.FileName);
+
+                    aux = new Bitmap(img_.Width,img_.Height);
+
+                    Graphics graphics_aux = Graphics.FromImage(aux);
+   
+
+                    graphics_aux.Clear(Color.Black);
+
+
+                    img_aux = new Bitmap(gg);
+
                 }
             }
         }
 
         protected System.Drawing.Point TranslateStretchImageMousePosition(System.Drawing.Point coordinates)
         {
-            float x = (float)(pictureBox1.Image.Width / pictureBox1.ClientSize.Width);
-            float y = (float)(pictureBox1.Image.Height / pictureBox1.ClientSize.Height);
-
-            Console.WriteLine(" pictureBox image width -> " + pictureBox1.Image.Width.ToString() 
-                + " pictureBox image client -> " + pictureBox1.ClientSize.Width.ToString()+" "+x.ToString());
-            Console.WriteLine(" pictureBox image height -> " + pictureBox1.Image.Height.ToString()
-                + " pictureBox image client -> " + pictureBox1.ClientSize.Height.ToString() + " " + y.ToString());
-
+            float x = (float)pictureBox1.Image.Width / pictureBox1.ClientSize.Width;
+            float y = (float)pictureBox1.Image.Height / pictureBox1.ClientSize.Height;
             return new System.Drawing.Point((int)(coordinates.X*x), (int)(coordinates.Y*y));
 
-            //// test to make sure our image is not null
-            //if (img_ == null) return coordinates;
-            //// Make sure our control width and height are not 0
-            //if (Width == 0 || Height == 0) return coordinates;
-            //// First, get the ratio (image to control) the height and width
-            //float ratioWidth = (float)img_.Width / Width;
-            //float ratioHeight = (float)img_.Height / Height;
-            //// Scale the points by our ratio
-            //float newX = coordinates.X;
-            //float newY = coordinates.Y;
-            //newX *= ratioWidth;
-            //newY *= ratioHeight;
-            //return new System.Drawing.Point((int)newX, (int)newY);
         }
-        protected float[] Position(System.Drawing.Point coordinates)
+
+        private void zoom_in_Click(object sender, EventArgs e)
         {
-            float[] coordinates_ = new float[2];
-            coordinates_[0] = (float)pictureBox1.Image.Width / (float)pictureBox1.ClientSize.Width;  //x
-            coordinates_[1] = (float)pictureBox1.Image.Height / (float)pictureBox1.ClientSize.Height; //y
+            float factor = 1.1f;
+            pictureBox1.Width = (int)(pictureBox1.Width * factor);
+            pictureBox1.Height = (int)(pictureBox1.Height * factor);
 
-            Console.WriteLine(" pictureBox image width -> " + pictureBox1.Image.Width.ToString()
-                + " pictureBox image client -> " + pictureBox1.ClientSize.Width.ToString() + " " + coordinates_[0]);
-            Console.WriteLine(" pictureBox image height -> " + pictureBox1.Image.Height.ToString()
-                + " pictureBox image client -> " + pictureBox1.ClientSize.Height.ToString() + " " + coordinates_[1].ToString());
-
-            return coordinates_;
-
-            //// test to make sure our image is not null
-            //if (img_ == null) return coordinates;
-            //// Make sure our control width and height are not 0
-            //if (Width == 0 || Height == 0) return coordinates;
-            //// First, get the ratio (image to control) the height and width
-            //float ratioWidth = (float)img_.Width / Width;
-            //float ratioHeight = (float)img_.Height / Height;
-            //// Scale the points by our ratio
-            //float newX = coordinates.X;
-            //float newY = coordinates.Y;
-            //newX *= ratioWidth;
-            //newY *= ratioHeight;
-            //return new System.Drawing.Point((int)newX, (int)newY);
         }
+
+        private void Zoom_out_Click(object sender, EventArgs e)
+        {
+
+            float factor = 0.9f;
+            pictureBox1.Width = (int)(pictureBox1.Width * factor);
+            pictureBox1.Height = (int)(pictureBox1.Height * factor);
+            if (pictureBox1.Height <= panel1.Height || pictureBox1.Width <= panel1.Width)
+            {
+                pictureBox1.Width = panel1.Width;
+                pictureBox1.Height = panel1.Height;
+            }
+            else
+                return;
+        }
+
+     
     }
 }
