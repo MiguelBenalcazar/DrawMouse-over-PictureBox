@@ -19,18 +19,10 @@ namespace DrawingByMouse
 
         System.Drawing.Point ini_Coord = System.Drawing.Point.Empty;
         System.Drawing.Point Current_Coord = System.Drawing.Point.Empty;
-        Mat img_;
-        Scalar color = Scalar.FromRgb(0,0,0);
-        Pen pen = new Pen(Brushes.Red,10);
-        
-
-        Bitmap aux;
-        Bitmap gg;
-        Bitmap img_aux;
-   
-        Graphics graphics;
-
-        Mat mat_aux;
+        Mat img_=new Mat();
+        Mat img_aux = new Mat();
+        Scalar color = Scalar.Red;
+       
 
         public Form1()
         {
@@ -41,7 +33,6 @@ namespace DrawingByMouse
            panel1.AutoScroll = true;
            panel1.Controls.Add(pictureBox1);
 
-            pen.EndCap = pen.StartCap = LineCap.Round;
         }
 
         private void pictureBox1_MouseWheel(object sender, MouseEventArgs e)
@@ -54,23 +45,36 @@ namespace DrawingByMouse
             {
                 if (e.Delta > 0)
                 {
-                    factor = 1.1f;
-                    pictureBox1.Width = (int)(pictureBox1.Width * factor);
-                    pictureBox1.Height = (int)(pictureBox1.Height * factor);
+                    if (pictureBox1.Width < panel1.Width * 20 || pictureBox1.Height < panel1.Height * 20)
+                    {
+                        factor = 1.1f;
+                        pictureBox1.Width = (int)(pictureBox1.Width * factor);
+                        pictureBox1.Height = (int)(pictureBox1.Height * factor);
+                    }
+                    else
+                        return;
+
+                    
                 }
                     
                 else
                 {
                     factor = 0.9f;
-                    pictureBox1.Width = (int)(pictureBox1.Width * factor);
-                    pictureBox1.Height = (int)(pictureBox1.Height * factor);
-                    if (pictureBox1.Height <= panel1.Height || pictureBox1.Width <= panel1.Width)
+                    if (pictureBox1.Width * factor <= panel1.Width || pictureBox1.Height * factor <= panel1.Height)
                     {
                         pictureBox1.Width = panel1.Width;
                         pictureBox1.Height = panel1.Height;
                     }
                     else
-                        return;
+                    {
+                        pictureBox1.Width = (int)(pictureBox1.Width * factor);
+                        pictureBox1.Height = (int)(pictureBox1.Height * factor);
+                    }
+
+
+
+
+
                 }
                 #region Move PictureBox1 inside of the Panel1
                 System.Drawing.Point panelcenter = new System.Drawing.Point((panel1.Width / 2), (panel1.Height / 2)); // find the centerpoint o
@@ -114,106 +118,59 @@ namespace DrawingByMouse
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-           
+            //if (e.Button == MouseButtons.Left && start_Paint)
+            //{
+            //    Cv2.Line(img_aux, ini_Coord.X, ini_Coord.Y, TranslateStretchImageMousePosition(e.Location).X,
+            //                                                TranslateStretchImageMousePosition(e.Location).Y, color, int.Parse(textBox1.Text), LineTypes.AntiAlias);
+            //    ini_Coord = TranslateStretchImageMousePosition(e.Location);
 
-            System.Drawing.SolidBrush myBrush = new System.Drawing.SolidBrush(System.Drawing.Color.Red);
+
+            //    Mat dest = new Mat();
+            //    Mat watershed= C_lmage.C_Image_Watershed(img_aux, img_, color);
+
+            //    Cv2.AddWeighted(img_, 1.0, watershed, 0.9, 0.5, dest);  //Combination of two images
+            //    pictureBox1.Image = C_lmage.MatToBitmap(watershed);
+            //}
+
+
             if (e.Button == MouseButtons.Left && start_Paint)
             {
-
-
-                pen.Width = Convert.ToInt16(textBox1.Text);
-
-
-                using (graphics = Graphics.FromImage(aux))
-                {
-                    graphics.DrawLine(pen, ini_Coord, TranslateStretchImageMousePosition(e.Location));
-                    graphics.CompositingQuality = CompositingQuality.HighQuality;
-                    graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                    ini_Coord = TranslateStretchImageMousePosition(e.Location);
-
-                }
-                mat_aux = C_lmage.BitmapToMat(aux);  //////ERROR
-
-
-
-
-
-                aux.MakeTransparent();
-
-                Graphics g = Graphics.FromImage(img_aux);
-
-                g.DrawImage(aux, 0, 0);
-
-                pictureBox1.Image = img_aux;
-                pictureBox1.Refresh();
-
-
-
-
-
-
+                Cv2.Line(img_aux, ini_Coord.X, ini_Coord.Y, TranslateStretchImageMousePosition(e.Location).X,
+                                                            TranslateStretchImageMousePosition(e.Location).Y, color, int.Parse(textBox1.Text), LineTypes.AntiAlias);
+                ini_Coord = TranslateStretchImageMousePosition(e.Location);
+                Mat dest = new Mat();
+                Cv2.AddWeighted(img_, 1.0, img_aux, 0.8, 0.0, dest);  //Combination of two images
+                pictureBox1.Image = C_lmage.MatToBitmap(dest);
             }
-            GC.Collect();
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            if (pictureBox1.Image != null)
+            if (e.Button == MouseButtons.Right && start_Paint)
             {
-                pictureBox1.Image = null;
-                Invalidate();
+                Cv2.Line(img_aux, ini_Coord.X, ini_Coord.Y, TranslateStretchImageMousePosition(e.Location).X,
+                                                            TranslateStretchImageMousePosition(e.Location).Y, Scalar.Black, int.Parse(textBox1.Text), LineTypes.AntiAlias);
+                ini_Coord = TranslateStretchImageMousePosition(e.Location);
+                Mat dest = new Mat();
+                Cv2.AddWeighted(img_, 1.0, img_aux, 0.8, 0.0, dest);  //Combination of two images
+                pictureBox1.Image = C_lmage.MatToBitmap(dest);
             }
-            img_ = null;
+
+            GC.Collect(); //let w
         }
 
+ 
 
-        private void button2_Click(object sender, EventArgs e)
-        {
-            Mat aux_mat = C_lmage.BitmapToMat(aux);
-            Cv2.ImWrite("C:\\Users\\LAB01-PC\\Pictures\\test\\test.jpg", mat_aux);
-           
-        }
+
 
         private void button4_Click(object sender, EventArgs e)
         {
            if(colorDialog1.ShowDialog() == DialogResult.OK)
             {
                 button4.BackColor = colorDialog1.Color;
-                pen.Color = Color.FromArgb(255, colorDialog1.Color);
+              
                 color = Scalar.FromRgb(colorDialog1.Color.R, colorDialog1.Color.G, colorDialog1.Color.B);
             }
                 
         }
 
 
-
-        private void button3_Click(object sender, EventArgs e)
-        {
-            using (OpenFileDialog dlg = new OpenFileDialog())
-            {
-                dlg.Title = "Open Image";
-                dlg.Filter = "bmp files (*.bmp)|*.bmp";
-
-                if (dlg.ShowDialog() == DialogResult.OK)
-                {
-
-                    img_= C_lmage.C_Image_OpenImage(dlg.FileName,1);
-                    gg = C_lmage.MatToBitmap(img_);
-                    pictureBox1.Image = gg;
-
-                    aux = new Bitmap(img_.Width,img_.Height);
-
-                    Graphics graphics_aux = Graphics.FromImage(aux);
-   
-
-                    graphics_aux.Clear(Color.Black);
-
-
-                    img_aux = new Bitmap(gg);
-
-                }
-            }
-        }
 
         protected System.Drawing.Point TranslateStretchImageMousePosition(System.Drawing.Point coordinates)
         {
@@ -223,29 +180,77 @@ namespace DrawingByMouse
 
         }
 
-        private void zoom_in_Click(object sender, EventArgs e)
+
+
+        private void openImageToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            float factor = 1.1f;
-            pictureBox1.Width = (int)(pictureBox1.Width * factor);
-            pictureBox1.Height = (int)(pictureBox1.Height * factor);
+            using (OpenFileDialog dlg = new OpenFileDialog())
+            {
+                dlg.Title = "Open Image";
+                dlg.Filter = "Image files (*.jpg, *.jpeg, *.jpe, *.jfif, *.png, *.bmp) | *.jpg; *.jpeg; *.jpe; *.jfif; *.png; *.bmp";
+
+                if (dlg.ShowDialog() == DialogResult.OK)
+                {
+
+                    img_ = C_lmage.C_Image_OpenImage(dlg.FileName, 1);
+                    pictureBox1.Image = C_lmage.MatToBitmap(img_);
+                    img_aux = img_.EmptyClone();
+
+                }
+            }
+        }
+
+        private void closeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Close();
 
         }
 
-        private void Zoom_out_Click(object sender, EventArgs e)
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
 
-            float factor = 0.9f;
-            pictureBox1.Width = (int)(pictureBox1.Width * factor);
-            pictureBox1.Height = (int)(pictureBox1.Height * factor);
-            if (pictureBox1.Height <= panel1.Height || pictureBox1.Width <= panel1.Width)
+            Cv2.ImWrite("C:\\Users\\LAB01-PC\\Pictures\\test\\test.jpg", img_aux);
+            Mat gray_img = new Mat();
+            Cv2.CvtColor(img_aux, gray_img, ColorConversionCodes.BGR2GRAY);
+            Cv2.ImWrite("C:\\Users\\LAB01-PC\\Pictures\\test\\test1.jpg", gray_img);
+        }
+
+        private void cleanToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (pictureBox1.Image != null)
             {
-                pictureBox1.Width = panel1.Width;
-                pictureBox1.Height = panel1.Height;
+                pictureBox1.Image = null;
+                Invalidate();
+            }
+            img_ = null;
+        }
+
+        private void zoomInToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+            if (pictureBox1.Width < panel1.Width * 20 || pictureBox1.Height < panel1.Height * 20)
+            {
+                float factor = 1.1f;
+                pictureBox1.Width = (int)(pictureBox1.Width * factor);
+                pictureBox1.Height = (int)(pictureBox1.Height * factor);
             }
             else
                 return;
         }
 
-     
+        private void zoomOutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            float factor = 0.9f;
+            if (pictureBox1.Width * factor <= panel1.Width || pictureBox1.Height * factor <= panel1.Height)
+            {
+                pictureBox1.Width = panel1.Width;
+                pictureBox1.Height = panel1.Height;
+            }
+            else
+            {
+                pictureBox1.Width = (int)(pictureBox1.Width * factor);
+                pictureBox1.Height = (int)(pictureBox1.Height * factor);
+            }
+        }
     }
 }

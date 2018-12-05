@@ -1,4 +1,6 @@
 ﻿using OpenCvSharp;
+using System;
+using System.Collections.Generic;
 using System.Drawing;
 
 
@@ -111,6 +113,70 @@ namespace DrawingByMouse
             }
             return Origi_Image;
         }
+        //watershed
+       /* public static Mat C_Image_Watershed(Mat image, Mat Origi_Image, Scalar color)
+        {
+            var componentCount = 0;
+            var rnd = new Random();
+            var watershedImage=new Mat();
+            OpenCvSharp.Point[][] contours_data;
+            HierarchyIndex[] hierarchyIndexes;
+            Mat img = C_Image_GrayValue(image);
+
+            Cv2.FindContours(img, out contours_data, out hierarchyIndexes, RetrievalModes.CComp, ContourApproximationModes.ApproxSimple);
+           
+            Mat markers= new Mat(Origi_Image.Size(), MatType.CV_32S, s: Scalar.All(0));
+            for (int i = 0; i < contours_data.Length; i++)
+            {
+                Cv2.DrawContours(markers, contours_data, i, Scalar.All(componentCount + 1), -1, LineTypes.Link8, hierarchyIndexes);
+                componentCount++;
+            }
+            if (componentCount != 0)
+            {
+                var colorTable = new List<Vec3b>();
+                for (var i = 0; i < componentCount; i++)
+                {
+                    //colorTable.Add(color.ToVec3b());
+                    var b = rnd.Next(0, 255); //Cv2.TheRNG().Uniform(0, 255);
+                    var g = rnd.Next(0, 255); //Cv2.TheRNG().Uniform(0, 255);
+                    var r = rnd.Next(0, 255); //Cv2.TheRNG().Uniform(0, 255);
+
+                    colorTable.Add(new Vec3b((byte)b, (byte)g, (byte)r));
+                }
+
+                Cv2.Watershed(Origi_Image, markers);
+
+                Cv2.ImShow("test", markers);
+                 watershedImage = new Mat(markers.Size(), MatType.CV_8UC3);
+
+                // paint the watershed image
+                for (var i = 0; i < markers.Rows; i++)
+                {
+                    for (var j = 0; j < markers.Cols; j++)
+                    {
+                        var idx = markers.At<int>(i, j);
+                        if (idx == -1)
+                        {
+                            watershedImage.Set(i, j, new Vec3b(255, 255, 255));
+                        }
+                        else if (idx <= 0 || idx > componentCount)
+                        {
+                            watershedImage.Set(i, j, new Vec3b(0, 0, 0));
+                        }
+                        else
+                        {
+                            //watershedImage.Set(i, j, color.ToVec3b());
+                           watershedImage.Set(i, j, colorTable[idx - 1]);
+                        }
+                    }
+                }
+               // watershedImage = watershedImage * 0.5 + Origi_Image * 0.5;
+                // watershedImage = watershedImage * 0.5;
+            }
+            
+
+            return watershedImage;
+        }*/
        
         //Convert from Mat to Bitmap
         public static Bitmap MatToBitmap(Mat image)
